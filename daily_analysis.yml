@@ -1,0 +1,87 @@
+name: Daily Stock Analysis
+
+on:
+  schedule:
+    # Mon-Fri at 21:05 UTC (5:05 PM ET, after US market close)
+    - cron: "5 21 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      stocks:
+        description: "Override stock list (comma-separated), e.g. AAPL,TSLA"
+        required: false
+      dry_run:
+        description: "Dry run (no notifications)"
+        type: boolean
+        default: false
+      market_review:
+        description: "Run market review only"
+        type: boolean
+        default: false
+      backtest:
+        description: "Run backtest validation"
+        type: boolean
+        default: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run analysis
+        env:
+          # AI
+          OPENAI_API_KEY:      ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL:        ${{ secrets.OPENAI_MODEL }}
+          OPENAI_BASE_URL:     ${{ secrets.OPENAI_BASE_URL }}
+          ANTHROPIC_API_KEY:   ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL:     ${{ secrets.ANTHROPIC_MODEL }}
+          GEMINI_API_KEY:      ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL:        ${{ secrets.GEMINI_MODEL }}
+          # Watchlist
+          STOCK_LIST:          ${{ secrets.STOCK_LIST }}
+          # Notifications
+          EMAIL_SENDER:        ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD:      ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVERS:     ${{ secrets.EMAIL_RECEIVERS }}
+          EMAIL_SMTP_HOST:     ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT:     ${{ secrets.EMAIL_SMTP_PORT }}
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN:     ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID:    ${{ secrets.SLACK_CHANNEL_ID }}
+          # News
+          TAVILY_API_KEY:      ${{ secrets.TAVILY_API_KEY }}
+          BRAVE_API_KEY:       ${{ secrets.BRAVE_API_KEY }}
+          # Behavior
+          REPORT_TYPE:         ${{ vars.REPORT_TYPE || 'full' }}
+          NEWS_MAX_AGE_DAYS:   ${{ vars.NEWS_MAX_AGE_DAYS || '3' }}
+          BIAS_THRESHOLD:      ${{ vars.BIAS_THRESHOLD || '5.0' }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.market_review }}" = "true" ]; then
+            ARGS="--market-review"
+          elif [ "${{ github.event.inputs.backtest }}" = "true" ]; then
+            ARGS="--backtest"
+          else
+            if [ -n "${{ github.event.inputs.stocks }}" ]; then
+              ARGS="$ARGS --stocks ${{ github.event.inputs.stocks }}"
+            fi
+            if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+              ARGS="$ARGS --dry-run"
+            fi
+          fi
+          python main.py $ARGS
