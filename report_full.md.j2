@@ -1,0 +1,61 @@
+# 🎯 {{ date }} — Daily Stock Decision Dashboard
+
+Analyzed **{{ results|length }}** stock(s) | 🟢 Buy: **{{ results|selectattr("signal","eq","BUY")|list|length }}** 🟡 Watch: **{{ results|selectattr("signal","eq","WATCH")|list|length }}** 🔴 Sell: **{{ results|selectattr("signal","eq","SELL")|list|length }}**
+
+---
+
+## 📊 Summary
+
+{% for r in results %}
+{{ signal_icon(r.signal) }} **{{ r.symbol }}** ({{ r.name }}) | {{ r.signal }} | Score: {{ r.score }}/100 | {{ r.outlook }}
+{% endfor %}
+
+---
+
+{% for r in results %}
+## {{ signal_icon(r.signal) }} {{ r.symbol }} — {{ r.name }}
+
+| | |
+|---|---|
+| **Price** | ${{ r.price }} ({{ "{:+.2f}".format(r.change_pct) }}% today) |
+| **Signal** | {{ r.signal }} |
+| **Score** | {{ r.score }}/100 |
+| **Outlook** | {{ r.outlook }} |
+{% if r.entry %}| **Entry** | {{ r.entry }} |{% endif %}
+{% if r.stop_loss %}| **Stop Loss** | {{ r.stop_loss }} |{% endif %}
+{% if r.target %}| **Target** | {{ r.target }} |{% endif %}
+
+💡 **{{ r.conclusion }}**
+
+{% if r.risk_alerts %}
+### 🚨 Risks
+{% for risk in r.risk_alerts %}
+{{ loop.index }}. {{ risk }}
+{% endfor %}
+{% endif %}
+
+{% if r.catalysts %}
+### ✨ Catalysts
+{% for cat in r.catalysts %}
+{{ loop.index }}. {{ cat }}
+{% endfor %}
+{% endif %}
+
+{% if r.checklist %}
+### ✅ Checklist
+{% for item in r.checklist %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
+{% if r.news_headlines %}
+### 📰 Recent News
+{% for h in r.news_headlines %}
+- {{ h }}
+{% endfor %}
+{% endif %}
+
+---
+{% endfor %}
+
+> ⚠️ For informational purposes only. Not investment advice.
