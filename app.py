@@ -618,3 +618,48 @@ async def api_delete_history(date: str, symbol: str):
 @app.get("/api/results")
 async def api_results(date: Optional[str] = None, symbol: Optional[str] = None):
     return load_results(date_str=date, symbol=symbol)
+
+
+# ── Portfolio API ─────────────────────────────────────────────────────────────
+
+@app.get("/api/portfolio/summary")
+async def api_portfolio_summary():
+    from portfolio.tracker import PortfolioTracker
+    try:
+        return PortfolioTracker().summary()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/portfolio/trades")
+async def api_portfolio_trades():
+    from portfolio.tracker import PortfolioTracker
+    return [t.to_dict() for t in PortfolioTracker().get_trades()]
+
+
+class TradeRequest(BaseModel):
+    symbol: str
+    name: str = ""
+    action: str = "BUY"
+    shares: float
+    price: float
+    notes: str = ""
+
+
+@app.post("/api/portfolio/trades")
+async def api_add_trade(req: TradeRequest):
+    from portfolio.tracker import PortfolioTracker
+    try:
+        trade = PortfolioTracker().add_trade(
+            req.symbol, req.name, req.action, req.shares, req.price, req.notes
+        )
+        return {"ok": True, "trade": trade.to_dict()}
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.delete("/api/portfolio/trades/{trade_id}")
+async def api_delete_trade(trade_id: str):
+    from portfolio.tracker import PortfolioTracker
+    ok = PortfolioTracker().delete_trade(trade_id)
+    return {"ok": ok}
