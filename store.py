@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional
 
 log = logging.getLogger(__name__)
 
-DATA_DIR = Path(os.getenv("DATA_DIR", Path(__file__).parent.parent / "data_store"))
+def _data_dir() -> Path:
+    return Path(os.getenv("DATA_DIR", str(Path(__file__).parent.parent / "data_store")))
 
 
 def _ensure(path: Path):
@@ -20,20 +21,20 @@ def _ensure(path: Path):
 
 
 def _results_dir() -> Path:
-    p = DATA_DIR / "results"
+    p = _data_dir() / "results"
     _ensure(p)
     return p
 
 
 def _backtest_dir() -> Path:
-    p = DATA_DIR / "backtest"
+    p = _data_dir() / "backtest"
     _ensure(p)
     return p
 
 
 def _settings_file() -> Path:
-    _ensure(DATA_DIR)
-    return DATA_DIR / "settings.json"
+    _ensure(_data_dir())
+    return _data_dir() / "settings.json"
 
 
 # ── Analysis results ──────────────────────────────────────────────────────────
